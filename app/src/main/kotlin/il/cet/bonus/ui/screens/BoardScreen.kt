@@ -79,7 +79,12 @@ private typealias BoardEdge = il.cet.bonus.core.board.Board.Edge
  * grid cells. Supports both tap-to-place and drag-and-drop tile input.
  */
 @Composable
-fun BoardScreen(viewModel: GameViewModel, onExit: () -> Unit) {
+fun BoardScreen(
+    viewModel: GameViewModel,
+    onExit: () -> Unit,
+    musicTheme: il.cet.bonus.ui.theme.GameTheme,
+    onToggleMusicTheme: () -> Unit,
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val bonusGenerator = remember { il.cet.bonus.bonus.BonusWordBankLoader.create(context) }
     var selectedRackIndex by remember { mutableStateOf<Int?>(null) }
@@ -116,6 +121,11 @@ fun BoardScreen(viewModel: GameViewModel, onExit: () -> Unit) {
                     BevelButton(text = stringResource(R.string.query_word), modifier = Modifier.fillMaxWidth(), onClick = { showQueryDialog = true })
                     BevelButton(text = stringResource(R.string.letter_table), modifier = Modifier.fillMaxWidth(), onClick = { showLetterTable = true })
                     BevelButton(text = stringResource(R.string.complete_turn), modifier = Modifier.fillMaxWidth(), onClick = { viewModel.completeTurn() })
+                    BevelButton(
+                        text = if (musicTheme == il.cet.bonus.ui.theme.GameTheme.OLD) "מוזיקה: ישנה" else "מוזיקה: חדשה",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onToggleMusicTheme,
+                    )
                     Image(
                         painter = painterResource(R.drawable.joker),
                         contentDescription = null,

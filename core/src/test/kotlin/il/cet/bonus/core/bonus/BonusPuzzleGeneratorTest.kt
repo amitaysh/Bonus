@@ -9,8 +9,9 @@ import kotlin.test.assertTrue
 class BonusPuzzleGeneratorTest {
 
     private val bank = mapOf(
-        3 to listOf("שלג", "שיר", "שור"),
+        3 to listOf("דוב", "סוס", "שיר"),
         4 to listOf("שלום", "תפוח"),
+        5 to listOf("שולחן", "שולים", "בולים"),
     )
 
     @Test
@@ -20,6 +21,23 @@ class BonusPuzzleGeneratorTest {
         assertNotNull(puzzle)
         assertTrue(gen.checkAnagram(puzzle, puzzle.answer))
         assertEquals(puzzle.scrambledLetters.sorted(), puzzle.answer.toList().sorted())
+    }
+
+    @Test
+    fun `anagram accepts any valid dictionary word using the same letters, not just the generated answer`() {
+        // Letters מ,ה,ר,ג can form both "מהגר" and "גרמה" - both are real words, so
+        // either should be accepted, matching the puzzle's actual goal (build *a* valid
+        // word from the given letters, not guess the computer's specific pick).
+        val gen = BonusPuzzleGenerator(mapOf(4 to listOf("מהגר")), Random(1))
+        val puzzle = gen.generateAnagram(4)
+        assertNotNull(puzzle)
+        val dict = il.cet.bonus.core.dictionary.DictionaryRepository { sequenceOf("מהגר", "גרמה") }
+        assertTrue(gen.checkAnagram(puzzle, "גרמה", dict))
+        assertTrue(gen.checkAnagram(puzzle, "מהגר", dict))
+        // A word that isn't a permutation of the given letters must still be rejected.
+        assertTrue(!gen.checkAnagram(puzzle, "שלום", dict))
+        // Without a dictionary, only the exact generated answer is accepted (backward-compatible default).
+        assertTrue(!gen.checkAnagram(puzzle, "גרמה"))
     }
 
     @Test

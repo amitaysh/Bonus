@@ -73,8 +73,17 @@ fun BonusApp() {
             Surface(modifier = Modifier.fillMaxSize()) {
                 when (screen) {
                     Screen.MENU -> MainMenuScreen(
-                        currentTheme = gameTheme,
-                        onToggleTheme = {
+                        onNewGame = { screen = Screen.PLAYER_SETUP },
+                    )
+                    Screen.PLAYER_SETUP -> PlayerSetupScreen(onStart = { a, b ->
+                        viewModel.startGame(a, b)
+                        screen = Screen.BOARD
+                    })
+                    Screen.BOARD -> BoardScreen(
+                        viewModel = viewModel,
+                        onExit = { screen = Screen.MENU },
+                        musicTheme = gameTheme,
+                        onToggleMusicTheme = {
                             gameTheme = if (gameTheme == GameTheme.OLD) GameTheme.NEW else GameTheme.OLD
                             themeManager.current = gameTheme
                             musicController.setTheme(
@@ -82,13 +91,7 @@ fun BonusApp() {
                             )
                             musicController.start()
                         },
-                        onNewGame = { screen = Screen.PLAYER_SETUP },
                     )
-                    Screen.PLAYER_SETUP -> PlayerSetupScreen(onStart = { a, b ->
-                        viewModel.startGame(a, b)
-                        screen = Screen.BOARD
-                    })
-                    Screen.BOARD -> BoardScreen(viewModel = viewModel, onExit = { screen = Screen.MENU })
                 }
             }
         }

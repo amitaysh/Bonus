@@ -18,14 +18,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import il.cet.bonus.core.model.Letter
 import il.cet.bonus.core.model.Tile
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+
+/** Default tile size used across the app, including the bonus mini-game screen - it's now
+ * a dedicated full-screen destination (see `BonusMiniGameScreen`) with plenty of room, so
+ * there's no need to shrink tiles to fit the puzzle plus the full on-screen alphabet. */
+private val DEFAULT_TILE_SIZE = 44.dp
 
 /**
  * A tap-to-append Hebrew letter picker built entirely out of the original tile artwork
@@ -45,21 +52,37 @@ fun HebrewLetterPicker(
     // single-missing-letter bonus (SHARED_LETTER_TWO_WORDS/THREE_WORDS expect exactly one
     // letter) so tapping a new letter replaces the previous choice instead of appending.
     maxLength: Int? = null,
+    tileSize: Dp = DEFAULT_TILE_SIZE,
+    // The bonus mini-games show the typed answer inline inside the puzzle's own word
+    // tiles (see WordDisplayTiles' `filledAnswer`), so the standalone text preview here
+    // would be redundant floating text - callers that already show the built word
+    // elsewhere pass false to save vertical space and avoid a confusing duplicate.
+    showValuePreview: Boolean = true,
+    // Rendered to the side of the keyboard (not on its own line below it) - e.g. the
+    // delete/clear/confirm buttons for the bonus mini-game screen. Sharing the
+    // keyboard's own vertical space (instead of reserving a whole extra row just for
+    // these buttons) frees up more room for the keyboard itself on a phone screen.
+    actions: @Composable () -> Unit = {},
 ) {
     Column {
-        Text(text = value.ifEmpty { " " }, style = MaterialTheme.typography.headlineSmall)
-        // Hardcoded 11-per-row so all 22 letters fill exactly 2 even rows; FlowRow (unlike
-        // a manually chunked Row) measures each row's actual content so no tile clips even
-        // if the row's total width would exceed the container - it just overflows visibly
-        // instead of stopping wrapping, but with 11 fixed and adequate dialog width this
-        // fits cleanly in 2 rows.
-        FlowRow(maxItemsInEachRow = 11) {
-            Letter.entries.forEach { letter ->
-                LetterTileButton(letter) {
-                    val next = value + letter.hebrew
-                    onValueChange(if (maxLength != null) next.takeLast(maxLength) else next)
+        if (showValuePreview) {
+            Text(text = value.ifEmpty { " " }, style = MaterialTheme.typography.headlineSmall)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Hardcoded 11-per-row so all 22 letters fill exactly 2 even rows; FlowRow
+            // (unlike a manually chunked Row) measures each row's actual content so no
+            // tile clips even if the row's total width would exceed the container - it
+            // just overflows visibly instead of stopping wrapping, but with 11 fixed and
+            // adequate screen width this fits cleanly in 2 rows.
+            FlowRow(modifier = Modifier.weight(1f, fill = false), maxItemsInEachRow = 11) {
+                Letter.entries.forEach { letter ->
+                    LetterTileButton(letter, size = tileSize) {
+                        val next = value + letter.hebrew
+                        onValueChange(if (maxLength != null) next.takeLast(maxLength) else next)
+                    }
                 }
             }
+            actions()
         }
         if (showActions) {
             Row {
@@ -78,20 +101,34 @@ fun HebrewLetterPicker(
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AnagramLetterPicker(availableLetters: List<Char>, value: String, onValueChange: (String) -> Unit) {
+fun AnagramLetterPicker(
+    availableLetters: List<Char>,
+    value: String,
+    onValueChange: (String) -> Unit,
+    tileSize: Dp = DEFAULT_TILE_SIZE,
+    showValuePreview: Boolean = true,
+    // See HebrewLetterPicker's `actions` param - rendered beside the keyboard instead of
+    // on its own line, to save vertical space on a phone screen.
+    actions: @Composable () -> Unit = {},
+) {
     // Remaining pool = all letters minus those already consumed into `value` (multiset diff).
     val remaining = availableLetters.toMutableList().also { pool ->
         value.forEach { c -> pool.remove(c) }
     }
     Column {
-        Text(text = value.ifEmpty { " " }, style = MaterialTheme.typography.headlineSmall)
-        FlowRow {
-            remaining.forEach { c ->
-                val letter = Letter.fromHebrew(c)
-                if (letter != null) {
-                    LetterTileButton(letter) { onValueChange(value + c) }
+        if (showValuePreview) {
+            Text(text = value.ifEmpty { " " }, style = MaterialTheme.typography.headlineSmall)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FlowRow(modifier = Modifier.weight(1f, fill = false)) {
+                remaining.forEach { c ->
+                    val letter = Letter.fromHebrew(c)
+                    if (letter != null) {
+                        LetterTileButton(letter, size = tileSize) { onValueChange(value + c) }
+                    }
                 }
             }
+            actions()
         }
         Row {
             Button(onClick = { if (value.isNotEmpty()) onValueChange(value.dropLast(1)) }) { Text("מחק") }
@@ -103,20 +140,40 @@ fun AnagramLetterPicker(availableLetters: List<Char>, value: String, onValueChan
 
 /**
  * Renders a word (with `_` marking hidden/blank letters) as a row of real letter-tile
- * images, with a plain empty bordered tile standing in for each blank spot - used by the
- * fill-in-blank and shared-letter bonus mini-games so the puzzle is shown with the same
- * tile artwork as everywhere else instead of plain text with underscores.
+ * images, with a plain empty bordered tile standing in for each *still-unfilled* blank -
+ * used by the fill-in-blank/anagram/shared-letter bonus mini-games so the puzzle is shown
+ * with the same tile artwork as everywhere else instead of plain text with underscores.
+ *
+ * [filledAnswer], if non-empty, overlays the player's typed letters (in order) into the
+ * blank slots as they're typed - e.g. after typing 2 letters for a 3-blank word, the
+ * first 2 blanks show the typed letter tiles and the 3rd still shows an empty box. This
+ * mirrors the C# reference's drag-a-letter-into-the-slot behavior (BonusForm.cs
+ * PutLetterOnBoard) instead of showing the typed answer as separate floating text.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WordDisplayTiles(displayed: String) {
+fun WordDisplayTiles(displayed: String, filledAnswer: String = "", tileSize: Dp = DEFAULT_TILE_SIZE) {
+    var blanksSeen = 0
     FlowRow {
         displayed.forEach { c ->
             if (c == '_') {
+                val filledChar = filledAnswer.getOrNull(blanksSeen)
+                blanksSeen++
+                if (filledChar != null) {
+                    val letter = Letter.fromHebrew(filledChar)
+                    if (letter != null) {
+                        Image(
+                            painter = painterResource(LetterTileArt.drawableFor(Tile.LetterTile(letter))),
+                            contentDescription = filledChar.toString(),
+                            modifier = Modifier.padding(2.dp).size(tileSize),
+                        )
+                        return@forEach
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .padding(2.dp)
-                        .size(44.dp)
+                        .size(tileSize)
                         .border(1.dp, Color.DarkGray)
                         .background(Color(0xFFEDEDED)),
                 )
@@ -126,7 +183,7 @@ fun WordDisplayTiles(displayed: String) {
                     Image(
                         painter = painterResource(LetterTileArt.drawableFor(Tile.LetterTile(letter))),
                         contentDescription = c.toString(),
-                        modifier = Modifier.padding(2.dp).size(44.dp),
+                        modifier = Modifier.padding(2.dp).size(tileSize),
                     )
                 }
             }
@@ -138,7 +195,7 @@ fun WordDisplayTiles(displayed: String) {
  * [LetterTileArt]), so every letter-entry surface in the app looks consistent with the
  * board/rack tiles instead of a generic keyboard button. */
 @Composable
-private fun LetterTileButton(letter: Letter, onClick: () -> Unit) {
+private fun LetterTileButton(letter: Letter, size: Dp = DEFAULT_TILE_SIZE, onClick: () -> Unit) {
     // pointerInput(letter) only restarts the gesture-detector coroutine when `letter`
     // changes - since `letter` never changes across recompositions here, the coroutine
     // (and the onClick closure it captured on first composition) stayed alive forever,
@@ -151,7 +208,7 @@ private fun LetterTileButton(letter: Letter, onClick: () -> Unit) {
         contentDescription = letter.hebrew.toString(),
         modifier = Modifier
             .padding(2.dp)
-            .size(44.dp)
+            .size(size)
             .pointerInput(letter) {
                 detectTapGestures { currentOnClick() }
             },

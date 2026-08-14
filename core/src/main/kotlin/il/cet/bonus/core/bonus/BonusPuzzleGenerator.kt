@@ -31,9 +31,19 @@ class BonusPuzzleGenerator(
         return AnagramPuzzle(letters, word)
     }
 
-    /** A guess is correct only if it uses exactly the given letters (any order) and is the target word. */
-    fun checkAnagram(puzzle: AnagramPuzzle, guess: String): Boolean =
-        guess == puzzle.answer && guess.toList().sorted() == puzzle.scrambledLetters.sorted()
+    /**
+     * A guess is correct if it uses exactly the given letters (any multiset permutation)
+     * AND is a real word - not merely if it matches the specific word the generator
+     * happened to pick. The puzzle's purpose is to assemble *any* valid word from the
+     * given letters, not to guess the computer's arbitrary choice (e.g. given
+     * מ,ה,ר,ג both "מהגר" and "גרמה" must be accepted). Falls back to exact-match-only
+     * if no [dictionary] is supplied (e.g. in tests using a tiny fixture bank).
+     */
+    fun checkAnagram(puzzle: AnagramPuzzle, guess: String, dictionary: DictionaryRepository? = null): Boolean {
+        if (guess.toList().sorted() != puzzle.scrambledLetters.sorted()) return false
+        if (guess == puzzle.answer) return true
+        return dictionary?.isValidWord(guess) ?: false
+    }
 
     /**
      * Bonus awarded for a correct anagram solve, scaled by word length per the confirmed
@@ -69,20 +79,46 @@ class BonusPuzzleGenerator(
 
     /**
      * Builds a puzzle where [wordCount] words (2 or 3) each hide the same shared letter
-     * at some position. Falls back to null if no combination of words sharing a common
-     * letter can be found from the word bank (best-effort search, bounded attempts).
+     * at a *fixed* position per word - matching the C# reference's exact layouts, not an
+     * arbitrary shared occurrence:
+     * - 2 words (`TwoCross`, both 5 letters): the shared letter must be each word's
+     *   middle (index 2) letter, so the "+" cross's blank is exactly at the intersection.
+     * - 3 words (`ThreeBy3`, all 3 letters): the shared letter must be word0's *last*
+     *   letter (index 2), word1's *middle* letter (index 1), and word2's *first* letter
+     *   (index 0) - this is what makes each row's first letter align under the previous
+     *   row's last letter, forming the diagonal staircase.
+     * Falls back to null if no combination of words satisfying these fixed positions can
+     * be found from the word bank (best-effort search, bounded attempts).
      */
     fun generateSharedLetter(wordCount: Int, length: Int, maxAttempts: Int = 200): SharedLetterPuzzle? {
         val bank = wordsByLength[length] ?: return null
         if (bank.size < wordCount) return null
+        val requiredIndices = when (wordCount) {
+            2 -> listOf(length / 2, length / 2)
+            3 -> listOf(length - 1, length / 2, 0)
+            else -> return null
+        }
         repeat(maxAttempts) {
-            val candidate = bank.shuffled(random).take(wordCount)
-            // Try every letter position of the first word as the "shared" position candidate.
-            for (letterCandidate in candidate.first().toSet()) {
-                if (candidate.all { it.contains(letterCandidate) }) {
-                    val indices = candidate.map { it.indexOf(letterCandidate) }
-                    return SharedLetterPuzzle(candidate, indices, letterCandidate)
+            val shuffled = bank.shuffled(random)
+            // For each candidate shared letter, try to pick one distinct word per slot
+            // whose letter at that slot's required index equals the candidate.
+            val wordsBySlotAndLetter = Array(wordCount) { slot ->
+                shuffled.filter { it.length == length && it.getOrNull(requiredIndices[slot]) != null }
+                    .groupBy { it[requiredIndices[slot]] }
+            }
+            val commonLetters = wordsBySlotAndLetter[0].keys.toMutableSet()
+            for (slot in 1 until wordCount) commonLetters.retainAll(wordsBySlotAndLetter[slot].keys)
+            for (letterCandidate in commonLetters.shuffled(random)) {
+                val used = HashSet<String>()
+                val candidate = ArrayList<String>(wordCount)
+                var ok = true
+                for (slot in 0 until wordCount) {
+                    val pick = wordsBySlotAndLetter[slot][letterCandidate]?.firstOrNull { it !in used }
+                    if (pick == null) { ok = false; break }
+                    used.add(pick)
+                    candidate.add(pick)
                 }
+                if (ok) return SharedLetterPuzzle(candidate, requiredIndices, letterCandidate)
             }
         }
         return null
