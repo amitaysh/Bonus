@@ -1,0 +1,8 @@
+<resources>
+    <color name="ic_launcher_background">#1B4332</color>
+    <color name="bonus_bg_old">#D8C9A3</color>
+    <color name="bonus_bg_new">#F5F5F5</color>
+    <color name="bonus_tile_bg">#F0D9A0</color>
+    <color name="bonus_square">#E63946</color>
+    <color name="lock_square">#333333</color>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Placeholder app icon foreground: stylized "ב" (bet) letter tile.
+         Replace with final branded artwork before release. -->
+    <path
+        android:fillColor="#F0D9A0"
+        android:pathData="M24,24h60v60h-60z" />
+    <path
+        android:fillColor="#1B4332"
+        android:pathData="M42,36 L42,72 L60,72 C67,72 72,67 72,60 C72,55 69,51 65,49 C68,47 70,44 70,40 C70,32 64,36 57,36 Z M51,44 L57,44 C60,44 61.5,45.5 61.5,48 C61.5,50.5 60,52 57,52 L51,52 Z M51,60 L58,60 C61,60 63,61.5 63,64 C63,66.5 61,68 58,68 L51,68 Z" />
+</vector>
