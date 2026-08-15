@@ -18,6 +18,8 @@
 
     <!-- Game screen -->
     <string name="complete_turn">סיום מהלך</string>
+    <string name="moves_counter_label">מספר מהלכים</string>
+    <string name="tiles_remaining_label">אותיות בקופה</string>
     <string name="letters_left_in_bag">אותיות בקופה</string>
     <string name="swap_letters">החלף אותיות</string>
     <string name="swap_letters_cost">החלפה תעלה לך 25 נקודות!</string>

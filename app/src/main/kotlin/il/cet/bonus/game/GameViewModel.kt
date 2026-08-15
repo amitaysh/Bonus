@@ -1,9 +1,10 @@
 package il.cet.bonus.game
 
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import il.cet.bonus.core.board.Board
 import il.cet.bonus.core.dictionary.DictionaryRepository
 import il.cet.bonus.core.game.GameEngine
@@ -18,6 +19,7 @@ import il.cet.bonus.core.bonus.BonusOutcome
 import il.cet.bonus.core.bonus.BonusPrize
 import il.cet.bonus.core.bonus.BonusType
 import il.cet.bonus.core.bonus.drawBonusPrize
+import il.cet.bonus.audio.MusicController
 import il.cet.bonus.audio.SfxPlayer
 import kotlin.random.Random
 
@@ -37,11 +39,16 @@ data class PendingAppeal(val move: Map<Position, Tile>, val rejectedWord: String
  * (place word, swap letters, place a lock). UI-only concern (selection/drag state) is
  * layered separately in BoardScreen; this class owns all rules-affecting state.
  */
-class GameViewModel(val dictionary: DictionaryRepository) : ViewModel() {
+class GameViewModel(
+    application: Application,
+    val dictionary: DictionaryRepository,
+    private val musicController: MusicController,
+) : AndroidViewModel(application) {
 
-    val board = Board()
-    private val bag = LetterBag()
-    private val engine = GameEngine(board, dictionary)
+    var board = Board()
+        private set
+    private var bag = LetterBag()
+    private var engine = GameEngine(board, dictionary)
 
     var players by mutableStateOf(listOf(Player(0, ""), Player(1, "")))
         private set
@@ -97,7 +104,52 @@ class GameViewModel(val dictionary: DictionaryRepository) : ViewModel() {
         private set
     private var bonusTriggeringPlayerIndex: Int = 0
 
+    // --- TEMPORARY DEBUG-ONLY helper, remove once bonus mini-games are fully verified ---
+    /** Index into [BonusType.entries] of the next debug-triggered mini-game; null once
+     * every type has been shown at least once via [debugTriggerNextBonus]. */
+    private var debugBonusIndex: Int = 0
+
+    /** Debug-only: triggers the next bonus mini-game type in sequence (ANAGRAM,
+     * FILL_IN_BLANK, SHARED_LETTER_TWO_WORDS, CROSSWORD_BUILD, SHARED_LETTER_THREE_WORDS),
+     * one per tap, for manual testing without needing to actually land on a bonus slot.
+     * Reports "no more puzzles" via [lastMessage] once all types have been shown. */
+    fun debugTriggerNextBonus() {
+        val types = BonusType.entries
+        if (debugBonusIndex >= types.size) {
+            lastMessage = "אין עוד חידות בונוס (debug)"
+            return
+        }
+        bonusTriggeringPlayerIndex = currentPlayerIndex
+        pendingBonusType = types[debugBonusIndex]
+        debugBonusIndex++
+    }
+    // --- end TEMPORARY DEBUG-ONLY helper ---
+
+    /** Snapshot shown by the end-of-turn summary popup (per original's "words + score
+     * gained" popup): the words just scored, this turn's total, and the scoring
+     * player's name. Cleared once dismissed, at which point any pending bonus-slot
+     * prize/mini-game and the turn switch actually take effect. */
+    data class TurnSummary(val playerName: String, val words: List<String>, val scoreDelta: Int)
+
+    var pendingTurnSummary by mutableStateOf<TurnSummary?>(null)
+        private set
+
+    /** Deferred until [pendingTurnSummary] is dismissed, so the bonus/mini-game popup
+     * never overlaps the turn summary popup. */
+    private var deferredAfterTurnSummary: (() -> Unit)? = null
+
+
+    /** The player who triggered the currently pending bonus mini-game (see
+     * [pendingBonusType]) - used by [BonusMiniGameScreen]'s crossword-build completion
+     * summary, which needs the player's name for its "X, אתה מקבל Y נקודות." line. */
+    val bonusTriggeringPlayerName: String get() = players[bonusTriggeringPlayerIndex].name
+
+    /** (Re)starts a fresh game: brand-new board/bag/engine (so no tiles, locks, used-bonus-slots,
+     * or bag contents survive from a previous game), plus all per-game UI/turn state reset. */
     fun startGame(playerAName: String, playerBName: String) {
+        board = Board()
+        bag = LetterBag()
+        engine = GameEngine(board, dictionary)
         players = listOf(Player(0, playerAName), Player(1, playerBName))
         currentPlayerIndex = 0
         racks = listOf(bag.draw(RACK_SIZE), bag.draw(RACK_SIZE))
@@ -105,6 +157,19 @@ class GameViewModel(val dictionary: DictionaryRepository) : ViewModel() {
         gameOver = false
         awardedBonusPrizes = emptySet()
         skipTurnSwitchOnce = false
+        lastError = null
+        lastMessage = null
+        pendingAppeal = null
+        pendingJokerChoice = null
+        pendingBonusCelebration = null
+        lastBonusScoreWasZero = false
+        movesPlayed = 0
+        pendingBonusType = null
+        bonusTriggeringPlayerIndex = 0
+        // A new game always (re)starts the regular background music, in case the
+        // previous game ended via game-over (which stops it until a new game starts -
+        // see playGameOver's doc comment).
+        musicController.resume()
     }
 
     val currentRack: List<Tile> get() = racks.getOrElse(currentPlayerIndex) { emptyList() }
@@ -145,7 +210,29 @@ class GameViewModel(val dictionary: DictionaryRepository) : ViewModel() {
         setRack(currentPlayerIndex, currentRack + restored)
     }
 
-    /** All prize identities already awarded this game - a prize can never repeat (confirmed rule). */
+    /** Drags an already-placed (not yet committed) tile from [from] to [to] without
+     * returning it to the rack first, so its joker-letter assignment (if any) and the
+     * pending-jokerChoice popup target both move with it directly. No-op if [from] isn't
+     * a pending tile, [to] is already occupied, or [to] isn't a placeable square. */
+    fun movePendingTile(from: Position, to: Position) {
+        if (from == to) return
+        val tile = pending[from] ?: return
+        if (!board.isPlaceable(to) || to in pending || board.tileAt(to) != null) return
+        pending = pending - from + (to to tile)
+        if (pendingJokerChoice == from) pendingJokerChoice = to
+    }
+
+    /** Ends the game immediately (used when the player presses "יציאה" / exit-game),
+     * same end-state as running out of rack tiles - shows the win/tie popup with the
+     * game-over music, per confirmed end-game rule (exit button also ends the game, not
+     * just a silent bag depletion). */
+    fun endGameManually() {
+        if (gameOver) return
+        gameOver = true
+        SfxPlayer.playGameOver(getApplication(), musicController)
+    }
+
+
     private var awardedBonusPrizes: Set<BonusPrize> = emptySet()
 
     /** Set when a non-mini-game prize (extra turn / multiplier) grants the current player
@@ -153,23 +240,56 @@ class GameViewModel(val dictionary: DictionaryRepository) : ViewModel() {
     private var skipTurnSwitchOnce: Boolean = false
 
     fun completeTurn() {
-        if (pending.isEmpty()) {
-            lastError = "לא הונחו אותיות"
-            return
-        }
         if (pendingJokerChoice != null) {
             lastError = "יש לבחור אות עבור הג'וקר לפני סיום התור"
+            return
+        }
+        // A player may validly end their turn without placing any letters (pass) - they
+        // score 0 points for the turn and play simply moves to the other player.
+        if (pending.isEmpty()) {
+            passTurn()
             return
         }
         val result = engine.proposeMove(pending)
         applyMoveResult(result, appealedMove = null)
     }
 
+    /** Player ends their turn without placing any tiles: scores 0, no tiles drawn, and
+     * (per the confirmed end-game rule) play simply passes to the other player - unless
+     * that emptied the game via a rack running out, which can't happen on a pass. */
+    private fun passTurn() {
+        val scoringPlayerIndex = currentPlayerIndex
+        val scoringPlayerName = players[scoringPlayerIndex].name
+        lastError = null
+        pendingAppeal = null
+        movesPlayed += 1
+        skipTurnSwitchOnce = false
+        SfxPlayer.playEndOfTurn(getApplication(), musicController)
+        deferredAfterTurnSummary = {
+            lastMessage = null
+            currentPlayerIndex = 1 - scoringPlayerIndex
+        }
+        pendingTurnSummary = TurnSummary(
+            playerName = scoringPlayerName,
+            words = emptyList(),
+            scoreDelta = 0,
+        )
+    }
+
     private fun applyMoveResult(result: Result<il.cet.bonus.core.game.TurnResult>, appealedMove: Map<Position, Tile>?) {
         result.onSuccess { turn ->
+            val scoringPlayerIndex = currentPlayerIndex
+            val scoringPlayerName = players[scoringPlayerIndex].name
+            // Capture the multiplier BEFORE it's consumed/cleared by withScoredTurn, so
+            // the end-of-turn summary popup can show the actual (multiplied) points
+            // awarded instead of the raw word score - otherwise an active X2/X4 bonus
+            // silently doubled/quadrupled the player's real score while the popup kept
+            // showing the un-multiplied number, making the multiplier look broken.
+            val activeMultiplier = players[scoringPlayerIndex].scoreMultiplier
             players = players.toMutableList().also {
                 it[currentPlayerIndex] = it[currentPlayerIndex].withScoredTurn(turn.scoreDelta)
             }
+            val awardedScoreDelta = turn.scoreDelta * activeMultiplier
             val placedCount = appealedMove?.size ?: pending.size
             val drawn = bag.draw(placedCount)
             setRack(currentPlayerIndex, currentRack + drawn)
@@ -178,18 +298,47 @@ class GameViewModel(val dictionary: DictionaryRepository) : ViewModel() {
             pendingAppeal = null
             movesPlayed += 1
             skipTurnSwitchOnce = false
-            SfxPlayer.playTurnAccepted()
+            // Note: no separate "tick" tone here anymore - playing playTurnAccepted()
+            // (a ToneGenerator blip) at the same time as the real end-of-turn music clip
+            // below caused an audible double "tick + music" overlap. The real audio cue
+            // (regular or bonus) below IS the turn-accepted sound now.
+            // Per user feedback: the end-of-turn cue (regular or bonus variant) must
+            // play right when the player clicks "complete turn" (i.e. now), not when the
+            // score-summary popup is later dismissed - and only ONE of the two cues
+            // should ever play for a given turn (previously both could fire: the bonus
+            // cue from the deferred bonus-prize draw, plus the regular cue in
+            // dismissTurnSummary, overlapping audibly).
             if (turn.triggeredBonusSlots.isNotEmpty()) {
-                bonusTriggeringPlayerIndex = currentPlayerIndex
-                applyBonusPrize(drawBonusPrize(awardedBonusPrizes, Random.Default))
+                SfxPlayer.playBonusWon(getApplication(), musicController)
             } else {
-                lastMessage = null
+                SfxPlayer.playEndOfTurn(getApplication(), musicController)
             }
-            if (bag.isEmpty()) {
-                gameOver = true
-            } else if (!skipTurnSwitchOnce) {
-                currentPlayerIndex = 1 - currentPlayerIndex
+            // Defer the bonus-prize draw and turn switch until the end-of-turn score
+            // summary popup (words scored + points gained, per the original game's
+            // "המשך" popup) is dismissed, so the two popups never overlap.
+            deferredAfterTurnSummary = {
+                if (turn.triggeredBonusSlots.isNotEmpty()) {
+                    bonusTriggeringPlayerIndex = scoringPlayerIndex
+                    applyBonusPrize(drawBonusPrize(awardedBonusPrizes, Random.Default))
+                } else {
+                    lastMessage = null
+                }
+                // Per confirmed original rule: the game ends only when one of the
+                // *players* runs out of letters in their own rack (not when the shared
+                // bag empties, since each player may still hold a full rack of tiles
+                // drawn earlier - see TODO.md end-game item).
+                if (racks.any { it.isEmpty() }) {
+                    gameOver = true
+                    SfxPlayer.playGameOver(getApplication(), musicController)
+                } else if (!skipTurnSwitchOnce) {
+                    currentPlayerIndex = 1 - scoringPlayerIndex
+                }
             }
+            pendingTurnSummary = TurnSummary(
+                playerName = scoringPlayerName,
+                words = turn.newWords.map { it.word },
+                scoreDelta = awardedScoreDelta,
+            )
         }.onFailure { err ->
             SfxPlayer.playTurnRejected()
             lastError = describeError(err)
@@ -230,6 +379,17 @@ class GameViewModel(val dictionary: DictionaryRepository) : ViewModel() {
         pendingAppeal = null
     }
 
+    /** Dismisses the end-of-turn score-summary popup and runs whatever was deferred
+     * behind it (bonus-prize draw / mini-game launch / turn switch / game-over check).
+     * The end-of-turn / bonus-won audio cue itself now plays immediately in
+     * [applyMoveResult] (right when the player clicks "complete turn"), not here. */
+    fun dismissTurnSummary() {
+        pendingTurnSummary = null
+        val action = deferredAfterTurnSummary
+        deferredAfterTurnSummary = null
+        action?.invoke()
+    }
+
 
     /**
      * Resolves a drawn [BonusPrize]. Mini-games are shown as an overlay (existing flow via
@@ -237,7 +397,6 @@ class GameViewModel(val dictionary: DictionaryRepository) : ViewModel() {
      */
     private fun applyBonusPrize(prize: BonusPrize) {
         awardedBonusPrizes = awardedBonusPrizes + prize
-        SfxPlayer.playBonusWon()
         val triggeringPlayer = players[bonusTriggeringPlayerIndex]
         when (prize) {
             is BonusPrize.MiniGame -> {

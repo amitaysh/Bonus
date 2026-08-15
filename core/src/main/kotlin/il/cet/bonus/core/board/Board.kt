@@ -8,9 +8,11 @@ import il.cet.bonus.core.model.Tile
  * The main NxN play grid, plus the peripheral "bonus slots" that surround it.
  *
  * CONFIRMED against real 1993 gameplay footage (`bonus.mp4`, pixel-measured grid lines,
- * see plan.md "Confirmed via real gameplay video"): the board is **10x10**, and the 3
- * peripheral bonus slots per edge align with columns/rows **1, 3, 7** (0-indexed on the
- * 10-wide/10-tall grid) - exactly matching the layout below. Bonus squares are NOT part
+ * see plan.md "Confirmed via real gameplay video") and against a full-board reference
+ * screenshot (pixel-measured grid + tile positions): the board is **10x10**, and the 3
+ * peripheral bonus slots per edge align with columns/rows **1, 3, 7** (0-indexed) on the
+ * TOP and LEFT edges, but **2, 6, 8** on the RIGHT and BOTTOM edges - the real layout is
+ * asymmetric, not uniform. Bonus squares are NOT part
  * of the main 10x10 grid, but they ARE genuine, independently-placeable board squares in
  * their own right (a player can place a letter directly on a bonus square, and that
  * letter participates in word-building exactly like any other square) - they are simply
@@ -30,7 +32,7 @@ class Board(val size: Int = DEFAULT_SIZE) {
 
     /** Peripheral bonus slots surrounding the board - see class doc: each is its own square. */
     val bonusSlots: List<BonusSlot> = Edge.entries.flatMap { edge ->
-        BONUS_ALIGN_INDICES.map { idx -> BonusSlot(edge, idx) }
+        alignIndicesFor(edge).map { idx -> BonusSlot(edge, idx) }
     }
 
     private val usedBonusSlots: MutableSet<BonusSlot> = mutableSetOf()
@@ -118,6 +120,12 @@ class Board(val size: Int = DEFAULT_SIZE) {
 
     companion object {
         const val DEFAULT_SIZE = 10
-        val BONUS_ALIGN_INDICES = listOf(1, 3, 7)
+        val BONUS_ALIGN_INDICES_TOP_LEFT = listOf(1, 3, 7)
+        val BONUS_ALIGN_INDICES_RIGHT_BOTTOM = listOf(2, 6, 8)
+
+        fun alignIndicesFor(edge: Edge): List<Int> = when (edge) {
+            Edge.TOP, Edge.LEFT -> BONUS_ALIGN_INDICES_TOP_LEFT
+            Edge.RIGHT, Edge.BOTTOM -> BONUS_ALIGN_INDICES_RIGHT_BOTTOM
+        }
     }
 }

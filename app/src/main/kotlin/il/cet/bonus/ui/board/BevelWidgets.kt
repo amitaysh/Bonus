@@ -54,9 +54,12 @@ fun BevelButton(
     ) {
         Text(
             text = text,
+            maxLines = 1,
+            softWrap = false,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Visible,
             style = TextStyle(
                 color = Color(0xFF1A1A2E),
-                fontSize = 13.sp,
+                fontSize = if (text.length > 10) 10.sp else 13.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             ),
@@ -73,6 +76,15 @@ fun LcdDisplay(
     digitColor: Color = Color(0xFFCFFF04),
     label: String? = null,
 ) {
+    label?.let {
+        Text(
+            text = it,
+            color = Color.White,
+            fontSize = 11.sp,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(bottom = 2.dp),
+        )
+    }
     Box(
         modifier = modifier
             .background(Color(0xFFC9C9D2), RoundedCornerShape(4.dp))
@@ -95,8 +107,5 @@ fun LcdDisplay(
                 ),
             )
         }
-    }
-    label?.let {
-        Text(text = it, color = LocalContentColor.current, fontSize = 11.sp)
     }
 }

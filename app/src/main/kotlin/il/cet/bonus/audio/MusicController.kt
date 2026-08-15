@@ -39,6 +39,17 @@ class MusicController(private val context: Context) {
         exoPlayer?.stop()
     }
 
+    /** Temporarily pauses playback without resetting the playlist/position - used to duck
+     * out for a short one-shot sting (turn-end cue, game-over applause) via [resume]. */
+    fun pause() {
+        exoPlayer?.playWhenReady = false
+    }
+
+    /** Resumes playback from where [pause] left off. */
+    fun resume() {
+        exoPlayer?.playWhenReady = true
+    }
+
     fun next() {
         player().seekToNextMediaItem()
     }

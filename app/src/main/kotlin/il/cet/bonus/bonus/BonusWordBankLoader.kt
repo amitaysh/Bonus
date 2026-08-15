@@ -11,6 +11,8 @@ object BonusWordBankLoader {
         3 to "dictionary/3Letters.txt",
         4 to "dictionary/4Letters.txt",
         5 to "dictionary/5Letters.txt",
+        6 to "dictionary/6Letters.txt",
+        7 to "dictionary/7Letters.txt",
     )
 
     private val SOFIT_LETTERS = setOf('ם', 'ן', 'ץ', 'ף', 'ך')

@@ -1,5 +1,6 @@
 package il.cet.bonus
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -62,7 +63,7 @@ fun BonusApp() {
     val viewModel: GameViewModel = viewModel(factory = object : ViewModelProvider.Factory {
         override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return GameViewModel(dictionary) as T
+            return GameViewModel(context.applicationContext as Application, dictionary, musicController) as T
         }
     })
 

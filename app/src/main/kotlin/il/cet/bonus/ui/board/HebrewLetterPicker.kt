@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,6 +58,12 @@ fun HebrewLetterPicker(
     // would be redundant floating text - callers that already show the built word
     // elsewhere pass false to save vertical space and avoid a confusing duplicate.
     showValuePreview: Boolean = true,
+    // The letter pool to show as tappable tiles - defaults to the full 22-letter
+    // alphabet (used by the word-query dialog and joker letter chooser), but the
+    // "letter completion" bonus mini-games (fill-in-blank / shared-letter) pass a
+    // smaller 10-12 letter subset (always including the correct letter(s)) instead of
+    // the full keyboard, matching the original game's puzzle screens.
+    letters: List<Letter> = Letter.entries,
     // Rendered to the side of the keyboard (not on its own line below it) - e.g. the
     // delete/clear/confirm buttons for the bonus mini-game screen. Sharing the
     // keyboard's own vertical space (instead of reserving a whole extra row just for
@@ -68,14 +74,15 @@ fun HebrewLetterPicker(
         if (showValuePreview) {
             Text(text = value.ifEmpty { " " }, style = MaterialTheme.typography.headlineSmall)
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // Hardcoded 11-per-row so all 22 letters fill exactly 2 even rows; FlowRow
-            // (unlike a manually chunked Row) measures each row's actual content so no
-            // tile clips even if the row's total width would exceed the container - it
-            // just overflows visibly instead of stopping wrapping, but with 11 fixed and
-            // adequate screen width this fits cleanly in 2 rows.
-            FlowRow(modifier = Modifier.weight(1f, fill = false), maxItemsInEachRow = 11) {
-                Letter.entries.forEach { letter ->
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Let FlowRow wrap naturally based on the *actual* available width instead of
+            // a fixed item-count-per-row: a hardcoded "11 per row" (sized for the full
+            // 22-letter alphabet keyboard) badly overflowed the screen for the bonus
+            // mini-games, which share this row with the puzzle grid/actions and have much
+            // less horizontal space - the fixed count caused tiles to run off-screen,
+            // requiring an extra scroll to reach the last row (see no_room.png bug report).
+            FlowRow(modifier = Modifier.weight(1f, fill = false)) {
+                letters.forEach { letter ->
                     LetterTileButton(letter, size = tileSize) {
                         val next = value + letter.hebrew
                         onValueChange(if (maxLength != null) next.takeLast(maxLength) else next)
@@ -86,9 +93,9 @@ fun HebrewLetterPicker(
         }
         if (showActions) {
             Row {
-                Button(onClick = { if (value.isNotEmpty()) onValueChange(value.dropLast(1)) }) { Text("מחק") }
+                BevelButton(text = "מחק", onClick = { if (value.isNotEmpty()) onValueChange(value.dropLast(1)) })
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = { onValueChange("") }) { Text("נקה") }
+                BevelButton(text = "נקה", onClick = { onValueChange("") })
             }
         }
     }
@@ -119,7 +126,7 @@ fun AnagramLetterPicker(
         if (showValuePreview) {
             Text(text = value.ifEmpty { " " }, style = MaterialTheme.typography.headlineSmall)
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             FlowRow(modifier = Modifier.weight(1f, fill = false)) {
                 remaining.forEach { c ->
                     val letter = Letter.fromHebrew(c)
@@ -131,9 +138,9 @@ fun AnagramLetterPicker(
             actions()
         }
         Row {
-            Button(onClick = { if (value.isNotEmpty()) onValueChange(value.dropLast(1)) }) { Text("מחק") }
+            BevelButton(text = "מחק", onClick = { if (value.isNotEmpty()) onValueChange(value.dropLast(1)) })
             Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = { onValueChange("") }) { Text("נקה") }
+            BevelButton(text = "נקה", onClick = { onValueChange("") })
         }
     }
 }
@@ -187,6 +194,48 @@ fun WordDisplayTiles(displayed: String, filledAnswer: String = "", tileSize: Dp 
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Renders [letters] as a single vertical column of tappable tiles - used to place half
+ * the letter-completion keyboard on each side of the puzzle grid (see
+ * [BonusMiniGameScreen]'s per-case layouts), matching the original game's screenshots
+ * where the letter pool flanks the puzzle instead of sitting in a wide row below it
+ * (which didn't fit on a phone screen without extra scrolling - see no_room.png bug).
+ */
+@Composable
+fun LetterSideColumn(
+    letters: List<Letter>,
+    tileSize: Dp = DEFAULT_TILE_SIZE,
+    onLetterTap: (Letter) -> Unit,
+) {
+    Column {
+        letters.forEach { letter ->
+            LetterTileButton(letter, size = tileSize) { onLetterTap(letter) }
+        }
+    }
+}
+
+/**
+ * Renders [letters] as a single flat, wrapping row of tappable tiles - used by the
+ * single-word letter-completion puzzles (fill-in-blank, 3-word shared-letter) which,
+ * per product decision, should show one plain 10-12 letter keyboard instead of a
+ * keyboard split across both sides of the puzzle (that split layout is reserved for the
+ * 2-word "cross" shared-letter puzzle only, matching the original game's screens).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun SingleLetterKeyboardRow(
+    letters: List<Letter>,
+    tileSize: Dp = DEFAULT_TILE_SIZE,
+    modifier: Modifier = Modifier,
+    onLetterTap: (Letter) -> Unit,
+) {
+    FlowRow(modifier = modifier) {
+        letters.forEach { letter ->
+            LetterTileButton(letter, size = tileSize) { onLetterTap(letter) }
         }
     }
 }
