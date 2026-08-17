@@ -1,0 +1,36 @@
+name: iosApp
+options:
+  bundleIdPrefix: il.cet.bonus
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    IPHONEOS_DEPLOYMENT_TARGET: 15.0
+    ENABLE_BITCODE: NO
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: il.cet.bonus.ios
+        PRODUCT_NAME: Bonus
+        INFOPLIST_FILE: iosApp/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+        # Signing is left on "Automatic" so it's easy to pick your own Apple ID team
+        # in Xcode's Signing & Capabilities tab before running on a physical iPad.
+        CODE_SIGN_STYLE: Automatic
+    preBuildScripts:
+      - name: Compile Kotlin Framework
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+        inputFiles:
+          - "${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}"
+        outputFiles:
+          - "${BUILT_PRODUCTS_DIR}/Shared.framework"

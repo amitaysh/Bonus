@@ -11,3 +11,10 @@ local.properties
 *.apk
 *.aab
 *.log
+
+# iOS / Xcode
+iosApp/iosApp.xcodeproj/project.xcworkspace/
+iosApp/iosApp.xcodeproj/xcuserdata/
+iosApp/build/
+*.xcuserstate
+DerivedData/
