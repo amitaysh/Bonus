@@ -41,11 +41,14 @@ kotlin {
                 implementation(compose.material3)
                 implementation(compose.ui)
                 implementation(compose.components.resources)
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
             }
         }
         val androidMain by getting {
             dependencies {
                 implementation(compose.uiTooling)
+                implementation("androidx.media3:media3-exoplayer:1.4.1")
+                implementation("androidx.media3:media3-common:1.4.1")
             }
         }
     }

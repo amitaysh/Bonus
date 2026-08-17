@@ -16,6 +16,9 @@ targets:
     deploymentTarget: "15.0"
     sources:
       - path: iosApp
+      - path: ../shared/src/commonMain/composeResources/files
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: il.cet.bonus.ios
@@ -28,6 +31,9 @@ targets:
     preBuildScripts:
       - name: Compile Kotlin Framework
         script: |
+          export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+          export PATH="$JAVA_HOME/bin:$PATH"
+          export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
           cd "$SRCROOT/.."
           ./gradlew :shared:embedAndSignAppleFrameworkForXcode
         # Intentionally no inputFiles/outputFiles: this script's real inputs are all of
