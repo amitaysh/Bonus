@@ -1,0 +1,67 @@
+<resources>
+    <string name="app_name">בונוס</string>
+
+    <!-- Main menu -->
+    <string name="menu_new_game">משחק חדש</string>
+    <string name="menu_resume_game">חזרה למשחק</string>
+    <string name="menu_players">שחקנים</string>
+    <string name="menu_settings">הגדרות</string>
+    <string name="menu_hall_of_fame">טבלת אלופים</string>
+    <string name="menu_exit">יציאה</string>
+    <string name="menu_exit_confirm">האם ברצונכם לצאת מבונוס?</string>
+
+    <!-- Player setup -->
+    <string name="player_a_default">שחקן א</string>
+    <string name="player_b_default">שחקן ב</string>
+    <string name="player_names_title">שמות השחקנים:</string>
+    <string name="start_game">התחל משחק</string>
+    <string name="menu_back">חזרה</string>
+
+    <!-- Game screen -->
+    <string name="complete_turn">סיום מהלך</string>
+    <string name="moves_counter_label">מספר מהלכים</string>
+    <string name="tiles_remaining_label">אותיות בקופה</string>
+    <string name="letters_left_in_bag">אותיות בקופה</string>
+    <string name="swap_letters">החלף אותיות</string>
+    <string name="swap_letters_cost">החלפה תעלה לך 25 נקודות!</string>
+    <string name="swap_letters_not_enough_points">ניתן לבצע החלפה רק אם ברשותך לפחות 25 נקודות!</string>
+    <string name="swap_letters_no_letters_left">לא נותרו בקופה אותיות להחלפה!</string>
+    <string name="joker_pick_letter">הקש על האות שברצונך לקבל במקום הג\'וקר.</string>
+    <string name="moves_label_short">מהלכים</string>
+    <string name="query_word">שאילתא</string>
+    <string name="query_word_prompt">לכתיבת מלה יש להקיש על האותיות המתאימות.</string>
+    <string name="letter_table">טבלת אותיות</string>
+
+    <!-- Word validation -->
+    <string name="invalid_word_placement">האותיות לא שובצו באופן חוקי!</string>
+    <string name="first_word_no_bonus">במלה הראשונה במשחק אסור לשבץ אות במשבצת בונוס.</string>
+    <string name="new_word_points">נקודות!</string>
+
+    <!-- Locks -->
+    <string name="lock_square_hint">זהו מנעול. הנחתו של מנעול על משבצת כלשהי חוסמת את המשבצת ולא מאפשרת להניח עליה אותיות אחרות.</string>
+    <string name="place_lock">הנח מנעול</string>
+
+    <!-- Bonus squares -->
+    <string name="bonus_square_hint">זוהי משבצת בונוס. הנחת האות הראשונה או האחרונה של מלה כלשהי עליה מזכה את השחקן בפרס.</string>
+
+    <!-- Challenge / appeal -->
+    <string name="challenge_word">ערעור</string>
+    <string name="challenge_confirm">האם אתה מאשר?</string>
+    <string name="challenge_correct">צדקת בשיפוט.</string>
+    <string name="challenge_incorrect">טעית בשיפוט.</string>
+
+    <!-- Turn / time -->
+    <string name="turn_time_up">זמנך עבר... התור עובר ל</string>
+    <string name="moves_left_two">נותרו עוד שני מהלכים לסיום המשחק!</string>
+    <string name="moves_left_one">נותר עוד מהלך אחד לסיום המשחק!</string>
+
+    <!-- End game -->
+    <string name="game_over_tie">המשחק הסתיים. התוצאה: תיקו!</string>
+    <string name="you_win">ואתה המנצח!</string>
+
+    <!-- Settings -->
+    <string name="theme_old">סגנון קלאסי</string>
+    <string name="theme_new">סגנון חדש</string>
+    <string name="mute_sound">ביטול קול</string>
+    <string name="next_song">שיר הבא</string>
+</resources>

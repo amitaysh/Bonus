@@ -30,7 +30,7 @@ targets:
         script: |
           cd "$SRCROOT/.."
           ./gradlew :shared:embedAndSignAppleFrameworkForXcode
-        inputFiles:
-          - "${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}"
-        outputFiles:
-          - "${BUILT_PRODUCTS_DIR}/Shared.framework"
+        # Intentionally no inputFiles/outputFiles: this script's real inputs are all of
+        # shared/src/**, which Xcode has no way to track declaratively here, so it must
+        # always re-run (and let Gradle's own incremental build decide what's stale).
+        alwaysOutOfDate: true
