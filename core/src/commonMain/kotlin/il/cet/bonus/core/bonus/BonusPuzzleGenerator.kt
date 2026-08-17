@@ -117,7 +117,7 @@ class BonusPuzzleGenerator(
         if (filledLetters.size != puzzle.blankIndices.size) return false
         val reconstructed = puzzle.displayed.toCharArray()
         puzzle.blankIndices.forEachIndexed { i, idx -> reconstructed[idx] = filledLetters[i] }
-        val word = String(reconstructed)
+        val word = reconstructed.concatToString()
         if (word == puzzle.answer) return true
         return dictionary?.isValidWord(word) ?: false
     }

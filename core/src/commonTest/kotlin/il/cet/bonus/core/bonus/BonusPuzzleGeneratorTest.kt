@@ -24,7 +24,7 @@ class BonusPuzzleGeneratorTest {
     }
 
     @Test
-    fun `anagram accepts any valid dictionary word using the same letters, not just the generated answer`() {
+    fun `anagram accepts any valid dictionary word using the same letters not just the generated answer`() {
         // Letters מ,ה,ר,ג can form both "מהגר" and "גרמה" - both are real words, so
         // either should be accepted, matching the puzzle's actual goal (build *a* valid
         // word from the given letters, not guess the computer's specific pick).
@@ -60,7 +60,7 @@ class BonusPuzzleGeneratorTest {
     }
 
     @Test
-    fun `crossword bonus puzzle gives an empty 5x10 board and a 16-letter rack`() {
+    fun `crossword bonus puzzle gives an empty 5x10 board and a 16 letter rack`() {
         val gen = BonusPuzzleGenerator(bank, Random(3))
         val puzzle = gen.generateCrosswordBonus()
         assertEquals(5, puzzle.rows)
