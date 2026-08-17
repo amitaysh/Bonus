@@ -14,9 +14,11 @@ struct ComposeView: UIViewControllerRepresentable {
 struct ContentView: View {
     var body: some View {
         ComposeView()
-            // Respect the top safe area (status bar / notch) so game UI (e.g. the
-            // player score panels in BoardScreen) doesn't render underneath the
-            // status bar clock, while still going edge-to-edge at the bottom.
-            .ignoresSafeArea(edges: .bottom)
+            // In landscape (the app is landscape-locked), the device's top/bottom
+            // safe-area edges correspond to the iPad's left/right physical edges,
+            // where the front camera notch/bezel sits - respect those (leading/
+            // trailing) so buttons aren't hidden behind it, while still going
+            // edge-to-edge on the actual top/bottom of the screen.
+            .ignoresSafeArea(edges: [.top, .bottom])
     }
 }

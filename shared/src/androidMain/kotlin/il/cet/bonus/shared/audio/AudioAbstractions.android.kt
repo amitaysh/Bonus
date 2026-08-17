@@ -13,12 +13,13 @@ actual class MusicController actual constructor() {
 
     actual fun setTheme(theme: MusicCatalog.Theme) {
         this.theme = theme
-        playlist = MusicCatalog.playlist(theme)
+        playlist = MusicCatalog.playlist(theme).shuffled()
+        index = 0
         start()
     }
 
     actual fun start() {
-        if (playlist.isEmpty()) playlist = MusicCatalog.playlist(theme)
+        if (playlist.isEmpty()) playlist = MusicCatalog.playlist(theme).shuffled()
         playCurrent()
     }
 
@@ -30,7 +31,14 @@ actual class MusicController actual constructor() {
         if (resId == 0) return
         mediaPlayer = MediaPlayer.create(PlatformContextHolder.context, resId).apply {
             setOnCompletionListener {
-                index = (index + 1) % playlist.size
+                val nextIndex = index + 1
+                if (nextIndex >= playlist.size) {
+                    // Reshuffle for a fresh random order once the whole playlist has played.
+                    playlist = MusicCatalog.playlist(theme).shuffled()
+                    index = 0
+                } else {
+                    index = nextIndex
+                }
                 playCurrent()
             }
             start()

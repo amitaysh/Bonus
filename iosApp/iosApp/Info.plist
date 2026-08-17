@@ -26,11 +26,25 @@
 	<true/>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<!-- The game board only fits well in landscape (matches the Android app's
+	     screenOrientation="landscape" manifest setting) - portrait is
+	     intentionally excluded here so iOS never renders/lays out the UI rotated
+	     while the device is held upright. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<!-- iPad requires supporting all orientations for Split View/multitasking
+	     unless the app opts out of multitasking entirely - this app's landscape-
+	     only board layout isn't designed to be resized, so opt out (matches the
+	     Android app not supporting split-screen either). -->
+	<key>UIRequiresFullScreen</key>
+	<true/>
 </dict>
 </plist>

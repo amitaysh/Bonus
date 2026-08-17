@@ -17,6 +17,7 @@ class MusicController(private val context: Context) {
 
     private fun player(): ExoPlayer = exoPlayer ?: ExoPlayer.Builder(context).build().also {
         it.repeatMode = Player.REPEAT_MODE_ALL
+        it.shuffleModeEnabled = true
         exoPlayer = it
     }
 
