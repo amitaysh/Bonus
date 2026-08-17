@@ -17,12 +17,13 @@ import il.cet.bonus.ui.board.BevelButton
 import il.cet.bonus.ui.board.NoiseBackground
 
 /**
- * Placeholder main menu screen (RTL, Hebrew) - full navigation to player-setup / game
- * board / settings / hall-of-fame is future work (see `player-setup-flow`, `board-ui`).
+ * Main menu screen (RTL, Hebrew): new game + settings (player names). Hall-of-fame /
+ * save-resume are still out of scope for v1 (see TODO.md).
  */
 @Composable
 fun MainMenuScreen(
     onNewGame: () -> Unit,
+    onSettings: () -> Unit,
 ) {
     NoiseBackground {
         Column(
@@ -35,6 +36,11 @@ fun MainMenuScreen(
                 text = stringResource(R.string.menu_new_game),
                 onClick = onNewGame,
                 modifier = Modifier.padding(top = 24.dp).width(220.dp),
+            )
+            BevelButton(
+                text = stringResource(R.string.menu_settings),
+                onClick = onSettings,
+                modifier = Modifier.padding(top = 12.dp).width(220.dp),
             )
         }
     }

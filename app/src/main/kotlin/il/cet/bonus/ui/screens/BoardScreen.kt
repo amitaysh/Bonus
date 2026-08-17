@@ -78,6 +78,10 @@ import il.cet.bonus.ui.board.LetterTileArt
 
 private typealias BoardEdge = il.cet.bonus.core.board.Board.Edge
 
+/** Set to true to re-enable the temporary debug bonus-trigger button below (kept for
+ * possible future manual-testing needs rather than deleted outright). */
+private const val DEBUG_BONUS_BUTTON_ENABLED = false
+
 /**
  * The main board screen, rebuilt to closely match the real 1993 Bonus DOS UI (confirmed
  * pixel-for-pixel from `bonus.mp4` gameplay footage): noisy blue backdrop, beveled gray
@@ -120,12 +124,15 @@ fun BoardScreen(
 
         // --- TEMPORARY DEBUG-ONLY button, remove once bonus mini-games are fully verified ---
         // Triggers the next bonus mini-game type in sequence on each tap, for manual
-        // testing without needing to land on an actual bonus slot.
-        androidx.compose.material3.Button(
-            onClick = { viewModel.debugTriggerNextBonus() },
-            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).zIndex(10f),
-        ) {
-            Text("DEBUG בונוס")
+        // testing without needing to land on an actual bonus slot. Hidden by default
+        // (see DEBUG_BONUS_BUTTON_ENABLED) but kept in place in case it's needed again.
+        if (DEBUG_BONUS_BUTTON_ENABLED) {
+            androidx.compose.material3.Button(
+                onClick = { viewModel.debugTriggerNextBonus() },
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).zIndex(10f),
+            ) {
+                Text("DEBUG בונוס")
+            }
         }
         // --- end TEMPORARY DEBUG-ONLY button ---
 
