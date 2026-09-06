@@ -31,6 +31,28 @@ strategy over the same dictionary/word-bank assets already bundled. Note: the ap
 challenge system (`ChallengeSystem`) already models the "no opponent-approval step
 needed in human-vs-computer" rule for when this lands.
 
+## 8. Real app icon / branding
+Current launcher icon is a placeholder stylized "ב" tile vector - CET should supply (or
+approve) real branding assets.
+
+## 9. Settings screen
+No settings screen exists yet (mute toggle, theme toggle is currently only on the main
+menu). `menu_settings` string already exists.
+
+## 10. support up to 4 players online (future scope)
+
+## 25. fix Hebrew wordlists
+The Hebrew wordlists still contain many weird/non-standard Hebrew words, and are
+probably missing some regular classic words. Needs a review/cleanup pass over the
+bundled dictionary/word-bank assets.
+
+## 26. fix graphics and animation - missing joker character
+The joker character graphic is missing everywhere it should appear, including on
+bonus screens and elsewhere. Needs art assets and wiring wherever letter tiles are
+rendered.
+
+---
+
 ## 5. Crossword-build bonus mini-game — visual polish [DONE]
 `BonusType.CROSSWORD_BUILD` now renders with a bordered mini-crossword grid and
 `LetterTileArt` jpg tiles for both rack and placed letters (matching the main board's
@@ -49,16 +71,6 @@ original can ever be observed running (e.g. via DOSBox).
 `BoardScreen`'s rejected-move popup detects the single-invalid-word case and offers a
 dispute (עירעור) button wired to `GameViewModel.appealAccept()`/`appealDiscard()`, which
 accept the disputed word per `ChallengeSystem`'s confirmed human-vs-human rule.
-
-## 8. Real app icon / branding
-Current launcher icon is a placeholder stylized "ב" tile vector - CET should supply (or
-approve) real branding assets.
-
-## 9. Settings screen
-No settings screen exists yet (mute toggle, theme toggle is currently only on the main
-menu). `menu_settings` string already exists.
-
-## 10. support up to 4 players online (future scope)
 
 ## 11. more screen space for grid, move the letters box to the right or left, also present the other player's letter box on the other side as disabled letters. (example: /Users/amshahar/dev/pics/full_board.png) [DONE]
 Reworked `BoardScreen`'s top-level layout into a single full-height Row:
@@ -173,14 +185,4 @@ follow-up) for the end-of-turn-with-bonus cue. Copied into
 `ToneGenerator` placeholders) via a shared one-shot-with-music-ducking helper -
 background music pauses while the clip plays and resumes automatically on
 completion.
-
-## 25. fix Hebrew wordlists
-The Hebrew wordlists still contain many weird/non-standard Hebrew words, and are
-probably missing some regular classic words. Needs a review/cleanup pass over the
-bundled dictionary/word-bank assets.
-
-## 26. fix graphics and animation - missing joker character
-The joker character graphic is missing everywhere it should appear, including on
-bonus screens and elsewhere. Needs art assets and wiring wherever letter tiles are
-rendered.
 
