@@ -174,3 +174,13 @@ follow-up) for the end-of-turn-with-bonus cue. Copied into
 background music pauses while the clip plays and resumes automatically on
 completion.
 
+## 25. fix Hebrew wordlists
+The Hebrew wordlists still contain many weird/non-standard Hebrew words, and are
+probably missing some regular classic words. Needs a review/cleanup pass over the
+bundled dictionary/word-bank assets.
+
+## 26. fix graphics and animation - missing joker character
+The joker character graphic is missing everywhere it should appear, including on
+bonus screens and elsewhere. Needs art assets and wiring wherever letter tiles are
+rendered.
+
